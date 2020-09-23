@@ -1,0 +1,52 @@
+version: "3"
+services:
+  laravel:
+    build:
+      context: ./laravel
+      dockerfile: Dockerfile
+    image: maqsudi-k8s/laravel
+    container_name: "k8s-laravel-backend"
+    user: "33:33"
+    restart: unless-stopped
+    volumes:
+      - ./laravel:/srv
+  spring:
+    build:
+      context: ./spring
+      dockerfile: Dockerfile
+    container_name: "k8s-spring-backend"
+  nest:
+    container_name: "k8s-nest-backend"
+    build:
+      context: ./nest
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./nest:/app
+      - /app/node_modules
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    container_name: "k8s-vue-frontend"
+    volumes:
+      - ./client:/client
+      - client-volume:/client/dist
+  nginx:
+    image: nginx:latest
+    restart: unless-stopped
+    container_name: "k8s-nginx-server"
+    volumes:
+      - ./nginx:/etc/nginx/conf.d
+      - ./laravel:/srv
+      - client-volume:/client
+    ports:
+      - 80:80
+      - 8000:8000
+    depends_on:
+      - client
+      - spring
+volumes:
+  client-volume:
+    driver: local
